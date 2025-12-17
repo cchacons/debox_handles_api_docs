@@ -1,6 +1,36 @@
-# DeBox Handles - Embed API Documentation
+# DeBox Handle Marketplace - Embed API Documentation
 
-The Embed API allows you to render DeBox handles with their customization effects on your own website or application. This includes animated text effects, gradients, glow effects, and community branding.
+The Embed API allows you to render DeBox handles with their customization effects in your applications. This includes animated text effects, gradients, glow effects, and community branding.
+
+## Two Integration Approaches
+
+The API provides **two different approaches** depending on your platform:
+
+### 1. Web Applications (CSS + JavaScript)
+
+For web-based applications (websites, WebViews, web apps), we provide:
+- **`/styles.css`** - Pre-built CSS with all effect animations
+- **`/renderer.js`** - JavaScript library to apply effects to DOM elements
+- **`/:tokenAddress/config`** - JSON configuration for the web renderer
+
+This approach is ideal when you can use CSS animations and JavaScript DOM manipulation. The renderer handles all the complexity of applying gradients, animations, and glow effects.
+
+### 2. Native Mobile Applications (JSON Config)
+
+For native iOS (Swift) and Android (Kotlin) applications, we provide:
+- **`/:tokenAddress/native`** - Platform-agnostic JSON with rendering instructions
+
+This endpoint returns structured data with keyframe animations that your native code can interpret to render handles using native UI frameworks (UIKit/SwiftUI, Jetpack Compose, Android Views). No CSS or JavaScript required.
+
+| Feature | Web (CSS/JS) | Native (JSON) |
+|---------|--------------|---------------|
+| Platform | Browsers, WebViews | iOS, Android native |
+| Rendering | CSS animations, DOM | Native UI frameworks |
+| Effects | Full CSS support | Keyframe-based animations |
+| Glow | CSS text-shadow | Shadow layer configurations |
+| Gradients | CSS gradients | Color array + direction |
+
+---
 
 ## Table of Contents
 
@@ -8,10 +38,11 @@ The Embed API allows you to render DeBox handles with their customization effect
 2. [Authentication](#authentication)
 3. [API Endpoints](#api-endpoints)
 4. [Configuration Response](#configuration-response)
-5. [Rendering Handles](#rendering-handles)
-6. [Real-World Examples](#real-world-examples)
-7. [Caching Strategy](#caching-strategy)
-8. [Testing with cURL](#testing-with-curl)
+5. [Native SDK Integration](#native-sdk-integration)
+6. [Rendering Handles](#rendering-handles)
+7. [Real-World Examples](#real-world-examples)
+8. [Caching Strategy](#caching-strategy)
+9. [Testing with cURL](#testing-with-curl)
 
 ---
 
@@ -23,7 +54,7 @@ First, verify the API is working by fetching a community configuration:
 
 ```bash
 curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet" | jq
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet" | jq
 ```
 
 You should see a JSON response with the community's customization settings including `namespaceSuffix`, `baseColor`, `effect`, and `glow` configuration.
@@ -51,7 +82,7 @@ Save the following code as `test.html` and open it in your web browser to see a 
     // const TOKEN = '0x9244212403a2e827cadca1f6fb68b43bc0c7a41f';
     // const TOKEN = '0xf762407aec88afd53be1f6d94a6c98ff5c6e4a25';
     // const TOKEN = '0x4b9FF95124d5bD4dc39334372373c005D6b9C859';
-    const TOKEN = '0x9244212403a2e827cadca1f6fb68b43bc0c7a41f';
+    const TOKEN = '0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7';
     const headers = { 'x-api-key': KEY };
 
     Promise.all([
@@ -99,7 +130,7 @@ For a simpler integration approach, you can load assets directly via script/link
   <script src="https://debox-handle-marketplace.replit.app/api/embed/renderer.js"></script>
   <script>
     // Fetch config for a testnet community token
-    fetch('https://debox-handle-marketplace.replit.app/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet')
+    fetch('https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet')
       .then(res => res.json())
       .then(config => {
         // Render the handle with effects
@@ -285,7 +316,7 @@ Returns the active customization configuration for a community identified by its
 ```bash
 # Get config for a testnet community
 curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet" | jq
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet" | jq
 
 # Try other testnet communities
 curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
@@ -297,9 +328,108 @@ curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
 
 # Conditional request with ETag
 curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet" \
   -H "If-None-Match: \"abc123\"" -w "%{http_code}"
 ```
+
+---
+
+### GET /api/embed/:tokenAddress/native
+
+Returns a native mobile SDK configuration for rendering handles in iOS (Swift) and Android (Kotlin) apps. This endpoint provides platform-agnostic JSON with keyframe animations instead of CSS.
+
+**Path Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tokenAddress` | string | Yes | The community's token contract address (0x...) |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `env` | string | No | Environment: `mock`, `testnet`, or `mainnet` (defaults to `mock`) |
+
+**Headers Returned:**
+- `Content-Type: application/json`
+- `ETag: "<hash>"` (for conditional requests)
+- `Cache-Control: public, max-age=60`
+
+**cURL Examples:**
+```bash
+# Get native config for a testnet community
+curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet" | jq
+
+# Get native config for mock environment
+curl -s -H "x-api-key: DEBOX_HANDLE_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82e9e495883b0a13f964479117aad17bb061ecfe/native?env=mock" | jq
+```
+
+**Response Example:**
+```json
+{
+  "version": "1.0.0",
+  "tokenAddress": "0x82e9e495883b0a13f964479117aad17bb061ecfe",
+  "community": {
+    "name": "Test Token ECFE",
+    "slug": "testecfe",
+    "namespaceSuffix": ".testecfe"
+  },
+  "configUpdatedAt": "2025-11-23T06:01:08.984Z",
+  "textStyle": {
+    "type": "gradient",
+    "direction": "toRight",
+    "colors": ["#22C55E", "#3B82F6"]
+  },
+  "animation": {
+    "type": "hueShift",
+    "duration": 4000,
+    "repeat": "infinite",
+    "easing": "linear",
+    "keyframes": [
+      { "position": 0, "hueRotation": 0 },
+      { "position": 0.5, "hueRotation": 90 },
+      { "position": 1, "hueRotation": 0 }
+    ]
+  },
+  "glow": {
+    "size": 10,
+    "intensity": 140,
+    "color": "#84ecff",
+    "colorSource": "custom"
+  },
+  "shadow": {
+    "layers": [
+      { "color": "#84ecff", "blur": 5, "opacity": 1.26 },
+      { "color": "#84ecff", "blur": 10, "opacity": 0.98 },
+      { "color": "#84ecff", "blur": 15, "opacity": 0.7 }
+    ]
+  }
+}
+```
+
+**Native Config Field Reference:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `version` | string | API version (e.g., "1.0.0") |
+| `tokenAddress` | string | Community's token contract address |
+| `community` | object | Community info: `name`, `slug`, `namespaceSuffix` |
+| `configUpdatedAt` | string | ISO timestamp of last config change |
+| `textStyle` | object | Text color/gradient settings |
+| `animation` | object | Animation with keyframes (0.0-1.0 positions) |
+| `glow` | object | Glow effect settings |
+| `shadow` | object | Multi-layer shadow settings |
+
+**textStyle Types:**
+- `solid`: Single color with `color` field
+- `gradient`: Multiple colors with `direction` and `colors[]` fields
+
+**Animation Keyframe Properties:**
+- `position`: 0.0 to 1.0 (progress through animation)
+- `hueRotation`: Degrees to rotate hue
+- `opacity`: 0.0 to 1.0
+- `scale`: Scale factor (1.0 = normal)
+- `translateX/Y`: Translation in pixels
 
 ---
 
@@ -309,7 +439,7 @@ The config endpoint returns a comprehensive customization configuration:
 
 ```json
 {
-  "tokenAddress": "0x9244212403a2e827cadca1f6fb68b43bc0c7a41f",
+  "tokenAddress": "0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7",
   "communitySlug": "community",
   "communityName": "Community",
   "namespaceSuffix": ".debox",
@@ -398,6 +528,504 @@ Available `gradientType` values:
 - `matrix` - Matrix digital rain
 - `diamond` - Diamond sparkle
 - `glowing` - Soft glow pulsing
+
+---
+
+## Native SDK Integration
+
+This section covers the `/api/embed/:tokenAddress/native` endpoint for native iOS and Android applications. The native endpoint provides JSON-based rendering instructions that your app can use to render handles without CSS or JavaScript.
+
+### Quick Start for Native Apps
+
+```bash
+# Fetch native config for a community
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet"
+```
+
+### Configuration Types
+
+The native endpoint returns different configurations based on the community's customization settings. Currently, we support two primary configuration types:
+
+#### 1. Base Standard Color (Solid Color)
+
+When a community uses a simple solid color for their handles, the response is minimal:
+
+```json
+{
+  "version": "1.0.0",
+  "tokenAddress": "0x1234567890abcdef...",
+  "community": {
+    "name": "My Community",
+    "slug": "mycommunity",
+    "namespaceSuffix": ".mycom"
+  },
+  "configUpdatedAt": "2025-12-17T10:00:00.000Z",
+  "textStyle": {
+    "type": "solid",
+    "color": "#22C55E"
+  }
+}
+```
+
+**Rendering in Swift (iOS):**
+```swift
+struct HandleConfig: Codable {
+    let version: String
+    let tokenAddress: String
+    let community: Community
+    let configUpdatedAt: String
+    let textStyle: TextStyle
+}
+
+struct TextStyle: Codable {
+    let type: String
+    let color: String?
+}
+
+// Apply solid color to a UILabel
+func applyHandleStyle(to label: UILabel, config: HandleConfig) {
+    if config.textStyle.type == "solid", let hexColor = config.textStyle.color {
+        label.textColor = UIColor(hex: hexColor)
+    }
+}
+```
+
+**Rendering in Kotlin (Android):**
+```kotlin
+data class HandleConfig(
+    val version: String,
+    val tokenAddress: String,
+    val community: Community,
+    val configUpdatedAt: String,
+    val textStyle: TextStyle
+)
+
+data class TextStyle(
+    val type: String,
+    val color: String? = null
+)
+
+// Apply solid color to a TextView
+fun applyHandleStyle(textView: TextView, config: HandleConfig) {
+    if (config.textStyle.type == "solid" && config.textStyle.color != null) {
+        textView.setTextColor(Color.parseColor(config.textStyle.color))
+    }
+}
+```
+
+#### 2. Prebuilt Effect
+
+Prebuilt effects are complete visual packages with gradients, animations, and glow settings. When a community uses a prebuilt effect, the response includes all rendering details:
+
+```json
+{
+  "version": "1.0.0",
+  "tokenAddress": "0x1234567890abcdef...",
+  "community": {
+    "name": "My Community",
+    "slug": "mycommunity",
+    "namespaceSuffix": ".mycom"
+  },
+  "configUpdatedAt": "2025-12-17T10:00:00.000Z",
+  "textStyle": {
+    "type": "gradient",
+    "direction": "toRight",
+    "colors": ["#22C55E", "#3B82F6"]
+  },
+  "animation": {
+    "type": "hueShift",
+    "duration": 4000,
+    "repeat": "infinite",
+    "easing": "linear",
+    "keyframes": [
+      { "position": 0.0, "hueRotation": 0 },
+      { "position": 0.25, "hueRotation": 30 },
+      { "position": 0.5, "hueRotation": 90 },
+      { "position": 0.75, "hueRotation": 60 },
+      { "position": 1.0, "hueRotation": 0 }
+    ]
+  },
+  "glow": {
+    "size": 10,
+    "intensity": 140,
+    "color": "#84ecff",
+    "colorSource": "custom"
+  },
+  "shadow": {
+    "layers": [
+      { "color": "#84ecff", "blur": 5, "opacity": 1.26 },
+      { "color": "#84ecff", "blur": 10, "opacity": 0.98 },
+      { "color": "#84ecff", "blur": 15, "opacity": 0.7 }
+    ]
+  }
+}
+```
+
+### Field Specifications
+
+#### textStyle Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | `"solid"` \| `"gradient"` | The type of text coloring |
+| `color` | string | Hex color (only for `solid` type) |
+| `colors` | string[] | Array of hex colors (only for `gradient` type) |
+| `direction` | string | Gradient direction: `"toRight"`, `"toBottom"`, `"toBottomRight"`, `"radial"` |
+
+#### animation Object (Optional)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Animation type: `"hueShift"`, `"pulse"`, `"shimmer"`, etc. |
+| `duration` | number | Duration in milliseconds |
+| `repeat` | `"infinite"` \| number | How many times to repeat |
+| `easing` | string | Easing function: `"linear"`, `"easeInOut"`, etc. |
+| `keyframes` | array | Array of keyframe objects |
+
+#### Keyframe Object
+
+Each keyframe represents a point in the animation. The `position` is a value from 0.0 to 1.0 representing progress through the animation.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `position` | number | 0.0 to 1.0 (progress through animation) |
+| `hueRotation` | number | Degrees to rotate hue (0-360) |
+| `opacity` | number | Opacity value (0.0 to 1.0) |
+| `scale` | number | Scale factor (1.0 = normal size) |
+| `translateX` | number | Horizontal translation in pixels |
+| `translateY` | number | Vertical translation in pixels |
+
+#### glow Object (Optional)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `size` | number | Glow radius in pixels |
+| `intensity` | number | Glow intensity (100 = normal) |
+| `color` | string | Hex color for the glow |
+| `colorSource` | `"base"` \| `"custom"` | Whether color is from text or custom |
+
+#### shadow Object (Optional)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `layers` | array | Array of shadow layer objects |
+
+Each shadow layer:
+| Field | Type | Description |
+|-------|------|-------------|
+| `color` | string | Hex color for the shadow |
+| `blur` | number | Blur radius in pixels |
+| `opacity` | number | Shadow opacity |
+| `offsetX` | number | Horizontal offset (optional) |
+| `offsetY` | number | Vertical offset (optional) |
+
+### Implementation Examples
+
+#### Swift (iOS) - Complete Prebuilt Effect Rendering
+
+```swift
+import UIKit
+
+struct NativeConfig: Codable {
+    let version: String
+    let tokenAddress: String
+    let community: Community
+    let configUpdatedAt: String
+    let textStyle: TextStyle
+    let animation: Animation?
+    let glow: Glow?
+    let shadow: Shadow?
+}
+
+struct Community: Codable {
+    let name: String
+    let slug: String
+    let namespaceSuffix: String
+}
+
+struct TextStyle: Codable {
+    let type: String
+    let color: String?
+    let colors: [String]?
+    let direction: String?
+}
+
+struct Animation: Codable {
+    let type: String
+    let duration: Int
+    let `repeat`: String
+    let easing: String
+    let keyframes: [Keyframe]
+}
+
+struct Keyframe: Codable {
+    let position: Double
+    let hueRotation: Double?
+    let opacity: Double?
+    let scale: Double?
+}
+
+struct Glow: Codable {
+    let size: Int
+    let intensity: Int
+    let color: String
+    let colorSource: String
+}
+
+struct Shadow: Codable {
+    let layers: [ShadowLayer]
+}
+
+struct ShadowLayer: Codable {
+    let color: String
+    let blur: Int
+    let opacity: Double
+}
+
+class HandleRenderer {
+    
+    func renderHandle(label: UILabel, handleName: String, config: NativeConfig) {
+        // Set the text
+        label.text = handleName + config.community.namespaceSuffix
+        
+        // Apply text style
+        applyTextStyle(to: label, textStyle: config.textStyle)
+        
+        // Apply shadow/glow if present
+        if let shadow = config.shadow {
+            applyShadow(to: label, shadow: shadow)
+        }
+        
+        // Apply animation if present
+        if let animation = config.animation {
+            applyAnimation(to: label, animation: animation)
+        }
+    }
+    
+    private func applyTextStyle(to label: UILabel, textStyle: TextStyle) {
+        if textStyle.type == "solid", let color = textStyle.color {
+            label.textColor = UIColor(hex: color)
+        } else if textStyle.type == "gradient", let colors = textStyle.colors {
+            // Apply gradient text (requires CAGradientLayer mask)
+            applyGradientText(to: label, colors: colors, direction: textStyle.direction)
+        }
+    }
+    
+    private func applyShadow(to label: UILabel, shadow: Shadow) {
+        // Use first layer for UILabel shadow (for multiple layers, use custom drawing)
+        if let firstLayer = shadow.layers.first {
+            label.layer.shadowColor = UIColor(hex: firstLayer.color)?.cgColor
+            label.layer.shadowRadius = CGFloat(firstLayer.blur)
+            label.layer.shadowOpacity = Float(firstLayer.opacity)
+            label.layer.shadowOffset = .zero
+        }
+    }
+    
+    private func applyAnimation(to label: UILabel, animation: Animation) {
+        // Implement keyframe animation based on type
+        if animation.type == "hueShift" {
+            startHueShiftAnimation(on: label, animation: animation)
+        }
+    }
+}
+```
+
+#### Kotlin (Android) - Complete Prebuilt Effect Rendering
+
+```kotlin
+import android.graphics.*
+import android.widget.TextView
+import android.animation.ValueAnimator
+import android.view.animation.LinearInterpolator
+
+data class NativeConfig(
+    val version: String,
+    val tokenAddress: String,
+    val community: Community,
+    val configUpdatedAt: String,
+    val textStyle: TextStyle,
+    val animation: Animation? = null,
+    val glow: Glow? = null,
+    val shadow: Shadow? = null
+)
+
+data class Community(
+    val name: String,
+    val slug: String,
+    val namespaceSuffix: String
+)
+
+data class TextStyle(
+    val type: String,
+    val color: String? = null,
+    val colors: List<String>? = null,
+    val direction: String? = null
+)
+
+data class Animation(
+    val type: String,
+    val duration: Int,
+    val repeat: String,
+    val easing: String,
+    val keyframes: List<Keyframe>
+)
+
+data class Keyframe(
+    val position: Double,
+    val hueRotation: Double? = null,
+    val opacity: Double? = null,
+    val scale: Double? = null
+)
+
+data class Glow(
+    val size: Int,
+    val intensity: Int,
+    val color: String,
+    val colorSource: String
+)
+
+data class Shadow(
+    val layers: List<ShadowLayer>
+)
+
+data class ShadowLayer(
+    val color: String,
+    val blur: Int,
+    val opacity: Double
+)
+
+class HandleRenderer {
+    
+    fun renderHandle(textView: TextView, handleName: String, config: NativeConfig) {
+        // Set the text
+        textView.text = handleName + config.community.namespaceSuffix
+        
+        // Apply text style
+        applyTextStyle(textView, config.textStyle)
+        
+        // Apply shadow/glow if present
+        config.shadow?.let { applyShadow(textView, it) }
+        
+        // Apply animation if present
+        config.animation?.let { applyAnimation(textView, it) }
+    }
+    
+    private fun applyTextStyle(textView: TextView, textStyle: TextStyle) {
+        when (textStyle.type) {
+            "solid" -> {
+                textStyle.color?.let { 
+                    textView.setTextColor(Color.parseColor(it))
+                }
+            }
+            "gradient" -> {
+                textStyle.colors?.let { colors ->
+                    val shader = createGradientShader(textView, colors, textStyle.direction)
+                    textView.paint.shader = shader
+                }
+            }
+        }
+    }
+    
+    private fun createGradientShader(
+        textView: TextView, 
+        colors: List<String>, 
+        direction: String?
+    ): Shader {
+        val colorInts = colors.map { Color.parseColor(it) }.toIntArray()
+        val width = textView.paint.measureText(textView.text.toString())
+        val height = textView.textSize
+        
+        return when (direction) {
+            "toRight" -> LinearGradient(0f, 0f, width, 0f, colorInts, null, Shader.TileMode.CLAMP)
+            "toBottom" -> LinearGradient(0f, 0f, 0f, height, colorInts, null, Shader.TileMode.CLAMP)
+            "radial" -> RadialGradient(width/2, height/2, width/2, colorInts, null, Shader.TileMode.CLAMP)
+            else -> LinearGradient(0f, 0f, width, 0f, colorInts, null, Shader.TileMode.CLAMP)
+        }
+    }
+    
+    private fun applyShadow(textView: TextView, shadow: Shadow) {
+        shadow.layers.firstOrNull()?.let { layer ->
+            val color = Color.parseColor(layer.color)
+            val alpha = (layer.opacity * 255).toInt().coerceIn(0, 255)
+            val shadowColor = Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+            textView.setShadowLayer(layer.blur.toFloat(), 0f, 0f, shadowColor)
+        }
+    }
+    
+    private fun applyAnimation(textView: TextView, animation: Animation) {
+        if (animation.type == "hueShift") {
+            startHueShiftAnimation(textView, animation)
+        }
+    }
+    
+    private fun startHueShiftAnimation(textView: TextView, animation: Animation) {
+        val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = animation.duration.toLong()
+            repeatCount = if (animation.repeat == "infinite") ValueAnimator.INFINITE else 0
+            interpolator = LinearInterpolator()
+            
+            addUpdateListener { valueAnimator ->
+                val progress = valueAnimator.animatedValue as Float
+                val hueRotation = interpolateKeyframes(animation.keyframes, progress)
+                // Apply hue rotation to the text color/gradient
+                applyHueRotation(textView, hueRotation)
+            }
+        }
+        animator.start()
+    }
+    
+    private fun interpolateKeyframes(keyframes: List<Keyframe>, progress: Float): Float {
+        // Find the two keyframes we're between
+        var prevKeyframe = keyframes.first()
+        var nextKeyframe = keyframes.last()
+        
+        for (i in 0 until keyframes.size - 1) {
+            if (progress >= keyframes[i].position && progress <= keyframes[i + 1].position) {
+                prevKeyframe = keyframes[i]
+                nextKeyframe = keyframes[i + 1]
+                break
+            }
+        }
+        
+        val localProgress = if (nextKeyframe.position == prevKeyframe.position) 0f
+            else ((progress - prevKeyframe.position) / (nextKeyframe.position - prevKeyframe.position)).toFloat()
+        
+        val prevHue = prevKeyframe.hueRotation ?: 0.0
+        val nextHue = nextKeyframe.hueRotation ?: 0.0
+        
+        return (prevHue + (nextHue - prevHue) * localProgress).toFloat()
+    }
+}
+```
+
+### Testing the Native Endpoint
+
+Use these testnet community tokens for testing:
+
+| Token Address | Description |
+|---------------|-------------|
+| `0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7` | Primary testnet community |
+| `0x9244212403a2e827cadca1f6fb68b43bc0c7a41f` | Testnet community |
+| `0xf762407aec88afd53be1f6d94a6c98ff5c6e4a25` | Testnet community |
+| `0x4b9FF95124d5bD4dc39334372373c005D6b9C859` | Testnet community |
+
+```bash
+# Test with different environments
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet"
+
+# Test conditional caching
+ETAG=$(curl -sI -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet" \
+  | grep -i etag | cut -d' ' -f2)
+
+curl -s -w "HTTP Status: %{http_code}\n" -o /dev/null \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "If-None-Match: $ETAG" \
+  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet"
+# Should return 304 Not Modified
+```
 
 ---
 
@@ -571,7 +1199,7 @@ This example shows how to display a community's namespace suffix with its active
 <script src="https://debox-handle-marketplace.replit.app/api/embed/renderer.js"></script>
 <script>
   const API_KEY = 'DEBOX_HANDLE_API_KEY';
-  const TOKEN_ADDRESS = '0x9244212403a2e827cadca1f6fb68b43bc0c7a41f';
+  const TOKEN_ADDRESS = '0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7';
   
   fetch(`https://debox-handle-marketplace.replit.app/api/embed/${TOKEN_ADDRESS}/config?env=testnet`, {
     headers: { 'x-api-key': API_KEY }
@@ -604,7 +1232,7 @@ Display a full handle name with user's chosen name and community suffix:
 <script>
   const API_KEY = 'DEBOX_HANDLE_API_KEY';
   const userName = 'alice';  // User's chosen handle name
-  const TOKEN_ADDRESS = '0x9244212403a2e827cadca1f6fb68b43bc0c7a41f';
+  const TOKEN_ADDRESS = '0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7';
   
   fetch(`https://debox-handle-marketplace.replit.app/api/embed/${TOKEN_ADDRESS}/config?env=testnet`, {
     headers: { 'x-api-key': API_KEY }
@@ -663,7 +1291,7 @@ function DeBoxHandle({ tokenAddress, handleName, env = 'testnet' }) {
 
 // Usage with testnet community tokens
 <DeBoxHandle 
-  tokenAddress="0x9244212403a2e827cadca1f6fb68b43bc0c7a41f"
+  tokenAddress="0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7"
   handleName="alice.community"
   env="testnet"
 />
@@ -777,18 +1405,18 @@ curl -s -H "x-api-key: $API_KEY" "$BASE_URL/api/embed/renderer.js" | head -c 500
 # 4. Get config for testnet community
 echo -e "\n\n=== Testnet Community Config ==="
 curl -s -H "x-api-key: $API_KEY" \
-  "$BASE_URL/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet" | jq
+  "$BASE_URL/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet" | jq
 
 # 5. Test conditional request with ETag
 echo -e "\n=== ETag Test ==="
 ETAG=$(curl -s -I -H "x-api-key: $API_KEY" \
-  "$BASE_URL/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet" \
+  "$BASE_URL/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet" \
   | grep -i etag | cut -d' ' -f2 | tr -d '\r')
 echo "ETag: $ETAG"
 curl -s -w "Status: %{http_code}\n" -o /dev/null \
   -H "x-api-key: $API_KEY" \
   -H "If-None-Match: $ETAG" \
-  "$BASE_URL/api/embed/0x9244212403a2e827cadca1f6fb68b43bc0c7a41f/config?env=testnet"
+  "$BASE_URL/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet"
 
 # 6. Test invalid token address
 echo -e "\n=== Invalid Token Test ==="
@@ -806,7 +1434,8 @@ These token addresses are registered on testnet and can be used for testing:
 
 | Token Address | Description |
 |---------------|-------------|
-| `0x9244212403a2e827cadca1f6fb68b43bc0c7a41f` | Primary testnet community |
+| `0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7` | Primary testnet community |
+| `0x9244212403a2e827cadca1f6fb68b43bc0c7a41f` | Testnet community |
 | `0xf762407aec88afd53be1f6d94a6c98ff5c6e4a25` | Testnet community |
 | `0x4b9FF95124d5bD4dc39334372373c005D6b9C859` | Testnet community |
 
@@ -836,4 +1465,4 @@ All error responses follow this format:
 
 ## Support
 
-For questions or issues with the Debox Handles Embed API, please contact Carlos Chacon (cchakons@gmail.com)
+For questions or issues with the Embed API, please contact the DeBox team.
