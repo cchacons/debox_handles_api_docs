@@ -13,12 +13,14 @@ The Embed API allows you to render DeBox handles with their customization effect
    - [Discovery Endpoints](#discovery-endpoints)
    - [Asset Endpoints](#asset-endpoints)
    - [Configuration Endpoints](#configuration-endpoints)
-5. [Web Integration Guide](#web-integration-guide)
-6. [Native Mobile SDK Guide](#native-mobile-sdk-guide)
-7. [Configuration Reference](#configuration-reference)
-8. [Caching & Change Detection](#caching--change-detection)
-9. [Testing](#testing)
-10. [Error Handling](#error-handling)
+   - [Handle Ownership Endpoints](#handle-ownership-endpoints)
+5. [Blockchain Event Monitoring](#blockchain-event-monitoring)
+6. [Web Integration Guide](#web-integration-guide)
+7. [Native Mobile SDK Guide](#native-mobile-sdk-guide)
+8. [Configuration Reference](#configuration-reference)
+9. [Caching & Change Detection](#caching--change-detection)
+10. [Testing](#testing)
+11. [Error Handling](#error-handling)
 
 ---
 
@@ -458,6 +460,439 @@ Returns the native mobile SDK configuration. Use for iOS (Swift) and Android (Ko
   }
 }
 ```
+
+---
+
+### Handle Ownership Endpoints
+
+These endpoints allow you to query which handles a wallet address owns.
+
+#### GET /api/handles/by-wallet/:address
+
+Returns all handles owned by a specific wallet address. Supports multiple query modes for different use cases.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `address` | string | Wallet address (0x...) - case-insensitive |
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `mode` | string | `database` | Query mode: `database`, `chain`, or `auto` |
+| `network` | string | `testnet` | Network for chain queries: `testnet` or `mainnet` |
+
+**Query Modes:**
+
+| Mode | Speed | Data Source | Use Case |
+|------|-------|-------------|----------|
+| `database` | ~10ms | Database only | Fast UI updates, non-critical displays |
+| `chain` | ~700ms | Blockchain only | Authoritative ownership verification |
+| `auto` | ~10ms | Database + background chain verification | **Recommended** - Best of both worlds |
+
+**Recommended Modes:**
+
+- **`mode=auto`** (Recommended for most use cases) - Returns database results immediately for fast UI, while triggering background blockchain verification. The verification status is cached for 10 minutes. Subsequent calls show whether the data is fresh or stale.
+
+- **`mode=chain`** (Recommended for critical operations) - Queries the blockchain directly for authoritative ownership data. Use this when you need guaranteed accuracy, such as before processing transactions or displaying ownership proofs.
+
+**Response (mode=database):**
+```json
+{
+  "source": "database",
+  "mode": "database",
+  "network": "testnet",
+  "walletAddress": "0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B",
+  "handles": [
+    {
+      "id": "f7c876af-ede4-47a1-8729-442f60b4e327",
+      "tokenId": "1",
+      "name": "carlos",
+      "fullName": "carlos.doge",
+      "communityId": "011bb319-ae83-4bef-a236-d42949393816",
+      "communitySlug": "doge",
+      "mintedAt": "2025-11-26T10:10:45.070Z"
+    }
+  ],
+  "totalCount": 1
+}
+```
+
+**Response (mode=chain):**
+```json
+{
+  "source": "chain",
+  "mode": "chain",
+  "network": "testnet",
+  "walletAddress": "0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B",
+  "handles": [
+    {
+      "tokenId": "1",
+      "fullName": "carlos.doge",
+      "communityLabel": "doge"
+    }
+  ],
+  "totalCount": 1
+}
+```
+
+**Response (mode=auto):**
+```json
+{
+  "source": "database",
+  "mode": "auto",
+  "network": "testnet",
+  "walletAddress": "0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B",
+  "handles": [...],
+  "totalCount": 15,
+  "verification": {
+    "status": "fresh",
+    "lastVerifiedAt": "2025-12-24T03:35:26.964Z",
+    "nextCheckAt": "2025-12-24T03:45:26.964Z",
+    "verificationPending": false,
+    "discrepancyCount": 6,
+    "cachedChainCount": 21
+  },
+  "hint": "Verification cache is fresh"
+}
+```
+
+**Verification Status Values (mode=auto):**
+
+| Status | Description |
+|--------|-------------|
+| `unknown` | No previous verification - background check triggered |
+| `pending` | Verification currently in progress |
+| `fresh` | Verified within the last 10 minutes |
+| `stale` | Cache expired - background re-verification triggered |
+| `error` | Last verification failed - will retry |
+
+**Discrepancy Detection:**
+
+When using `mode=auto`, the response includes:
+- `discrepancyCount`: Difference between blockchain count and database count
+- `cachedChainCount`: Number of handles found on the blockchain
+
+A non-zero `discrepancyCount` indicates the database may be out of sync with the blockchain. This can happen when:
+- Handles were transferred directly on-chain
+- Recent mints haven't been indexed yet
+- Event indexer is behind
+
+**Examples:**
+
+```bash
+# Fast database query (default)
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B"
+
+# Recommended: Auto mode with background verification (testnet)
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=testnet"
+
+# Recommended: Auto mode with background verification (mainnet)
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=mainnet"
+
+# Authoritative blockchain query (requires network parameter)
+curl -s -H "x-api-key: YOUR_API_KEY" \
+  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=chain&network=testnet"
+```
+
+**Important Notes:**
+
+1. **Network parameter is required for `mode=chain` and `mode=auto`** - You must specify `network=testnet` or `network=mainnet` when using blockchain queries.
+
+2. **10-minute cache TTL** - In auto mode, blockchain verification is cached for 10 minutes. The `nextCheckAt` field shows when the cache will expire.
+
+3. **Background verification is non-blocking** - Auto mode returns database results immediately while verification happens asynchronously.
+
+4. **Poll for verification status** - After triggering a background verification (when `verificationPending: true`), call the endpoint again after a few seconds to see the updated status.
+
+---
+
+## Blockchain Event Monitoring
+
+Because DeBox handles are ERC-721 NFTs, every ownership change emits the standard `Transfer` event that all marketplaces and indexers understand. You can monitor these events directly on the blockchain to get real-time notifications for mints, transfers, and burns.
+
+### Understanding Transfer Events
+
+The ERC-721 `Transfer` event has this signature:
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
+```
+
+You can detect all lifecycle events from this single event:
+
+| Event Type | `from` Address | `to` Address | Example |
+|------------|---------------|--------------|---------|
+| **Mint** | `0x0000...0000` | User wallet | New handle created |
+| **Transfer** | User A | User B | Handle sold or gifted |
+| **Burn** | User wallet | `0x0000...0000` | Handle destroyed |
+
+**Event Topic (keccak256 hash):**
+```
+0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+```
+
+### Contract Addresses
+
+| Network | HandleRegistry Proxy Address |
+|---------|------------------------------|
+| BSC Testnet | See `docs/DEPLOYED_CONTRACTS.md` |
+| BSC Mainnet | See `docs/DEPLOYED_CONTRACTS.md` |
+
+---
+
+### Option A: WebSocket Subscription (Near Real-Time)
+
+Use `eth_subscribe` with a WebSocket provider for streaming events. This gives you near-instant notifications.
+
+**JavaScript Example (ethers.js v6):**
+
+```javascript
+import { ethers } from 'ethers';
+
+// Use a WebSocket provider for real-time events
+const wsProvider = new ethers.WebSocketProvider('wss://bsc-rpc.publicnode.com');
+
+// HandleRegistry contract address (use your deployed proxy address)
+const HANDLE_REGISTRY = '0xYourHandleRegistryProxyAddress';
+
+// Minimal ABI for Transfer event
+const abi = [
+  'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'
+];
+
+const contract = new ethers.Contract(HANDLE_REGISTRY, abi, wsProvider);
+
+// Listen for all Transfer events
+contract.on('Transfer', (from, to, tokenId, event) => {
+  const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+  
+  if (from === ZERO_ADDRESS) {
+    console.log(`MINT: Handle #${tokenId} minted to ${to}`);
+    // Notify your system about new handle
+  } else if (to === ZERO_ADDRESS) {
+    console.log(`BURN: Handle #${tokenId} burned by ${from}`);
+    // Handle was destroyed
+  } else {
+    console.log(`TRANSFER: Handle #${tokenId} moved from ${from} to ${to}`);
+    // Ownership changed
+  }
+  
+  // event.log contains full event data including transactionHash, blockNumber
+  console.log(`   Block: ${event.log.blockNumber}, Tx: ${event.log.transactionHash}`);
+});
+
+console.log('Listening for Transfer events...');
+```
+
+**Filtering by Specific Wallet:**
+
+```javascript
+// Only listen for events involving a specific wallet
+const WALLET_TO_WATCH = '0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B';
+
+// Filter for events where wallet is sender (outgoing transfers/burns)
+const filterFrom = contract.filters.Transfer(WALLET_TO_WATCH, null, null);
+
+// Filter for events where wallet is receiver (incoming transfers/mints)
+const filterTo = contract.filters.Transfer(null, WALLET_TO_WATCH, null);
+
+contract.on(filterFrom, (from, to, tokenId) => {
+  console.log(`Outgoing: Handle #${tokenId} sent to ${to}`);
+});
+
+contract.on(filterTo, (from, to, tokenId) => {
+  console.log(`Incoming: Handle #${tokenId} received from ${from}`);
+});
+```
+
+**Python Example:**
+
+```python
+from web3 import Web3
+import json
+
+# WebSocket connection
+w3 = Web3(Web3.WebsocketProvider('wss://bsc-rpc.publicnode.com'))
+
+HANDLE_REGISTRY = '0xYourHandleRegistryProxyAddress'
+TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+def handle_event(event):
+    from_addr = '0x' + event['topics'][1].hex()[26:]
+    to_addr = '0x' + event['topics'][2].hex()[26:]
+    token_id = int(event['topics'][3].hex(), 16)
+    
+    if from_addr == ZERO_ADDRESS:
+        print(f"MINT: Handle #{token_id} minted to {to_addr}")
+    elif to_addr == ZERO_ADDRESS:
+        print(f"BURN: Handle #{token_id} burned by {from_addr}")
+    else:
+        print(f"TRANSFER: Handle #{token_id}: {from_addr} -> {to_addr}")
+
+# Subscribe to Transfer events
+log_filter = w3.eth.filter({
+    'address': HANDLE_REGISTRY,
+    'topics': [TRANSFER_TOPIC]
+})
+
+print("Listening for Transfer events...")
+while True:
+    for event in log_filter.get_new_entries():
+        handle_event(event)
+```
+
+---
+
+### Option B: Polling with eth_getLogs (Most Reliable)
+
+WebSocket connections can drop, causing missed events. For production reliability, use `eth_getLogs` to poll for events and maintain a cursor (last processed block).
+
+**Best Practice:** Combine WebSocket for speed with periodic `eth_getLogs` backfill for guaranteed delivery.
+
+**JavaScript Example:**
+
+```javascript
+import { ethers } from 'ethers';
+
+const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
+const HANDLE_REGISTRY = '0xYourHandleRegistryProxyAddress';
+
+// Store this persistently (database, file, etc.)
+let lastProcessedBlock = 45000000; // Start from a known block
+
+async function pollForEvents() {
+  const currentBlock = await provider.getBlockNumber();
+  
+  // Process in chunks of 1000 blocks (BSC limit)
+  const CHUNK_SIZE = 1000;
+  
+  while (lastProcessedBlock < currentBlock) {
+    const fromBlock = lastProcessedBlock + 1;
+    const toBlock = Math.min(fromBlock + CHUNK_SIZE - 1, currentBlock);
+    
+    console.log(`Scanning blocks ${fromBlock} to ${toBlock}...`);
+    
+    const logs = await provider.getLogs({
+      address: HANDLE_REGISTRY,
+      topics: ['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'],
+      fromBlock,
+      toBlock
+    });
+    
+    for (const log of logs) {
+      const from = '0x' + log.topics[1].slice(26);
+      const to = '0x' + log.topics[2].slice(26);
+      const tokenId = BigInt(log.topics[3]);
+      
+      const ZERO = '0x0000000000000000000000000000000000000000';
+      
+      if (from === ZERO) {
+        console.log(`MINT: Handle #${tokenId} to ${to} (block ${log.blockNumber})`);
+      } else if (to === ZERO) {
+        console.log(`BURN: Handle #${tokenId} by ${from} (block ${log.blockNumber})`);
+      } else {
+        console.log(`TRANSFER: #${tokenId}: ${from} -> ${to} (block ${log.blockNumber})`);
+      }
+    }
+    
+    lastProcessedBlock = toBlock;
+    // Persist lastProcessedBlock to your database here
+  }
+}
+
+// Poll every 10 seconds
+setInterval(pollForEvents, 10000);
+pollForEvents(); // Initial call
+```
+
+---
+
+### Recommended: Hybrid Approach
+
+For production systems, use both methods together:
+
+1. **WebSocket** for near-instant notifications (when connection is active)
+2. **eth_getLogs** polling as a backup to catch any missed events
+3. **Store last processed block** in your database for recovery
+
+```javascript
+import { ethers } from 'ethers';
+
+class HandleEventMonitor {
+  constructor(proxyAddress, httpRpc, wsRpc) {
+    this.proxyAddress = proxyAddress;
+    this.httpProvider = new ethers.JsonRpcProvider(httpRpc);
+    this.wsProvider = new ethers.WebSocketProvider(wsRpc);
+    this.lastProcessedBlock = 0;
+    this.contract = new ethers.Contract(
+      proxyAddress,
+      ['event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)'],
+      this.wsProvider
+    );
+  }
+
+  async start(startBlock) {
+    this.lastProcessedBlock = startBlock;
+    
+    // 1. Backfill any missed events
+    await this.backfill();
+    
+    // 2. Start WebSocket listener for real-time
+    this.contract.on('Transfer', this.handleEvent.bind(this));
+    
+    // 3. Periodic backfill every 60 seconds as safety net
+    setInterval(() => this.backfill(), 60000);
+    
+    console.log('Handle event monitor started');
+  }
+
+  handleEvent(from, to, tokenId, event) {
+    const ZERO = '0x0000000000000000000000000000000000000000';
+    const type = from === ZERO ? 'MINT' : to === ZERO ? 'BURN' : 'TRANSFER';
+    
+    console.log(`[${type}] Handle #${tokenId}: ${from} -> ${to}`);
+    
+    // Send webhook, update database, etc.
+    this.notifySubscribers({ type, from, to, tokenId: tokenId.toString() });
+  }
+
+  async backfill() {
+    const currentBlock = await this.httpProvider.getBlockNumber();
+    // ... same polling logic as Option B
+  }
+
+  notifySubscribers(event) {
+    // Your notification logic here
+  }
+}
+
+// Usage
+const monitor = new HandleEventMonitor(
+  '0xYourHandleRegistryProxyAddress',
+  'https://bsc-dataseed.binance.org',
+  'wss://bsc-rpc.publicnode.com'
+);
+monitor.start(45000000);
+```
+
+---
+
+### Summary
+
+| Method | Speed | Reliability | Use Case |
+|--------|-------|-------------|----------|
+| WebSocket only | Instant | Medium (can miss events) | Development, testing |
+| eth_getLogs only | Delayed | High | Simple production setups |
+| Hybrid (recommended) | Instant + reliable | Very high | Production systems |
+
+**Key Takeaway:** Because handles are ERC-721 NFTs, every mint and transfer triggers the standard `Transfer` event. Monitor the HandleRegistry proxy contract's `Transfer` logs to track ownership changes. For near real-time updates use WebSocket `eth_subscribe`, and for full reliability store a last-seen block and backfill with `eth_getLogs` in chunks.
 
 ---
 
