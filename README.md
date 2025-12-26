@@ -1,6 +1,6 @@
-# DeBox Handle Marketplace - Embed API Documentation
+# Triba - Embed API Documentation
 
-The Embed API allows you to render DeBox handles with their customization effects in your applications. This includes animated text effects, gradients, glow effects, and community branding.
+The Embed API allows you to render Triba handles with their customization effects in your applications. This includes animated text effects, gradients, glow effects, and community branding.
 
 ---
 
@@ -64,7 +64,7 @@ This endpoint returns structured data with keyframe animations that your native 
 
 ```bash
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet"
+  "https://triba.ai/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/config?env=testnet"
 ```
 
 **Step 2:** Create a simple HTML page:
@@ -74,7 +74,7 @@ curl -s -H "x-api-key: YOUR_API_KEY" \
 <html>
 <head>
   <title>DeBox Handle Demo</title>
-  <link rel="stylesheet" href="https://debox-handle-marketplace.replit.app/api/embed/styles.css">
+  <link rel="stylesheet" href="https://triba.ai/api/embed/styles.css">
 </head>
 <body style="background:#111; padding:40px; font-family:sans-serif;">
   <h1 style="color:white;">DeBox Handle Demo</h1>
@@ -82,12 +82,12 @@ curl -s -H "x-api-key: YOUR_API_KEY" \
     <span id="handle">loading...</span>
   </div>
 
-  <script src="https://debox-handle-marketplace.replit.app/api/embed/renderer.js"></script>
+  <script src="https://triba.ai/api/embed/renderer.js"></script>
   <script>
     const API_KEY = 'YOUR_API_KEY';
     const TOKEN = '0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7';
     
-    fetch(`https://debox-handle-marketplace.replit.app/api/embed/${TOKEN}/config?env=testnet`, {
+    fetch(`https://triba.ai/api/embed/${TOKEN}/config?env=testnet`, {
       headers: { 'x-api-key': API_KEY }
     })
       .then(res => res.json())
@@ -106,7 +106,7 @@ curl -s -H "x-api-key: YOUR_API_KEY" \
 
 ```bash
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet"
+  "https://triba.ai/api/embed/0x82C8796412EaE4dBEB6Df318f3841706e6b98Ed7/native?env=testnet"
 ```
 
 **Step 2:** Parse the JSON response and render using your platform's native UI framework. See the [Native Mobile SDK Guide](#native-mobile-sdk-guide) for complete Swift and Kotlin examples.
@@ -130,13 +130,13 @@ Include the API key in your requests using one of these methods:
 **Option 1: x-api-key Header (Recommended)**
 ```bash
 curl -H "x-api-key: dbx_abc123..." \
-  "https://debox-handle-marketplace.replit.app/api/embed/..."
+  "https://triba.ai/api/embed/..."
 ```
 
 **Option 2: Authorization Bearer Token**
 ```bash
 curl -H "Authorization: Bearer dbx_abc123..." \
-  "https://debox-handle-marketplace.replit.app/api/embed/..."
+  "https://triba.ai/api/embed/..."
 ```
 
 ### API Key Format
@@ -157,7 +157,7 @@ curl -H "Authorization: Bearer dbx_abc123..." \
 
 ## API Reference
 
-**Base URL:** `https://debox-handle-marketplace.replit.app/api/embed`
+**Base URL:** `https://triba.ai/api/embed`
 
 All endpoints require authentication via API key.
 
@@ -195,7 +195,7 @@ Returns a list of all registered communities with minimal data.
 **Example:**
 ```bash
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/communities?env=testnet"
+  "https://triba.ai/api/embed/communities?env=testnet"
 ```
 
 ---
@@ -241,11 +241,11 @@ Returns communities with configuration changes since a specified timestamp. Desi
 ```bash
 # Initial call
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/changes?env=testnet"
+  "https://triba.ai/api/embed/changes?env=testnet"
 
 # Subsequent poll (use serverTime from previous response)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/changes?env=testnet&since=2025-12-17T12:00:00.000Z"
+  "https://triba.ai/api/embed/changes?env=testnet&since=2025-12-17T12:00:00.000Z"
 ```
 
 ---
@@ -290,11 +290,11 @@ Returns the CSS file containing all effect animations and styles.
 ```bash
 # Get latest
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/styles.css"
+  "https://triba.ai/api/embed/styles.css"
 
 # Get specific version (immutable caching)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/styles.css?v=0.0.1"
+  "https://triba.ai/api/embed/styles.css?v=0.0.1"
 ```
 
 ---
@@ -369,12 +369,12 @@ Returns the web-optimized configuration for a community. Use with the CSS and Ja
 ```bash
 # Get the ETag
 curl -sI -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8.../config?env=testnet"
+  "https://triba.ai/api/embed/0x82C8.../config?env=testnet"
 
 # Use If-None-Match for conditional request (returns 304 if unchanged)
 curl -s -H "x-api-key: YOUR_API_KEY" \
   -H "If-None-Match: \"abc123\"" \
-  "https://debox-handle-marketplace.replit.app/api/embed/0x82C8.../config?env=testnet"
+  "https://triba.ai/api/embed/0x82C8.../config?env=testnet"
 ```
 
 ---
@@ -585,19 +585,19 @@ A non-zero `discrepancyCount` indicates the database may be out of sync with the
 ```bash
 # Fast database query (default)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B"
+  "https://triba.ai/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B"
 
 # Recommended: Auto mode with background verification (testnet)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=testnet"
+  "https://triba.ai/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=testnet"
 
 # Recommended: Auto mode with background verification (mainnet)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=mainnet"
+  "https://triba.ai/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=auto&network=mainnet"
 
 # Authoritative blockchain query (requires network parameter)
 curl -s -H "x-api-key: YOUR_API_KEY" \
-  "https://debox-handle-marketplace.replit.app/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=chain&network=testnet"
+  "https://triba.ai/api/handles/by-wallet/0x3121d4d08EcDDd4dfd4cc4F1fD29B0A6E0b9649B?mode=chain&network=testnet"
 ```
 
 **Important Notes:**
@@ -614,7 +614,7 @@ curl -s -H "x-api-key: YOUR_API_KEY" \
 
 ## Blockchain Event Monitoring
 
-Because DeBox handles are ERC-721 NFTs, every ownership change emits the standard `Transfer` event that all marketplaces and indexers understand. You can monitor these events directly on the blockchain to get real-time notifications for mints, transfers, and burns.
+Because Triba handles are ERC-721 NFTs, every ownership change emits the standard `Transfer` event that all marketplaces and indexers understand. You can monitor these events directly on the blockchain to get real-time notifications for mints, transfers, and burns.
 
 ### Understanding Transfer Events
 
@@ -905,14 +905,14 @@ This section covers how to render handles in web applications using the CSS and 
 The provided renderer handles all the complexity:
 
 ```html
-<link rel="stylesheet" href="https://debox-handle-marketplace.replit.app/api/embed/styles.css">
-<script src="https://debox-handle-marketplace.replit.app/api/embed/renderer.js"></script>
+<link rel="stylesheet" href="https://triba.ai/api/embed/styles.css">
+<script src="https://triba.ai/api/embed/renderer.js"></script>
 
 <span id="handle"></span>
 
 <script>
   // Fetch config and render
-  fetch(`https://debox-handle-marketplace.replit.app/api/embed/${TOKEN}/config?env=testnet`, {
+  fetch(`https://triba.ai/api/embed/${TOKEN}/config?env=testnet`, {
     headers: { 'x-api-key': API_KEY }
   })
     .then(res => res.json())
@@ -945,13 +945,13 @@ function DeBoxHandle({ tokenAddress, handleName, env = 'testnet' }) {
     // Load CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://debox-handle-marketplace.replit.app/api/embed/styles.css';
+    link.href = 'https://triba.ai/api/embed/styles.css';
     document.head.appendChild(link);
     return () => document.head.removeChild(link);
   }, []);
   
   useEffect(() => {
-    fetch(`https://debox-handle-marketplace.replit.app/api/embed/${tokenAddress}/config?env=${env}`, {
+    fetch(`https://triba.ai/api/embed/${tokenAddress}/config?env=${env}`, {
       headers: { 'x-api-key': API_KEY }
     })
       .then(res => res.json())
@@ -998,16 +998,16 @@ onMounted(async () => {
   // Load CSS and renderer
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'https://debox-handle-marketplace.replit.app/api/embed/styles.css';
+  link.href = 'https://triba.ai/api/embed/styles.css';
   document.head.appendChild(link);
   
   const script = document.createElement('script');
-  script.src = 'https://debox-handle-marketplace.replit.app/api/embed/renderer.js';
+  script.src = 'https://triba.ai/api/embed/renderer.js';
   document.head.appendChild(script);
   
   // Fetch config
   const res = await fetch(
-    `https://debox-handle-marketplace.replit.app/api/embed/${props.tokenAddress}/config?env=${props.env}`,
+    `https://triba.ai/api/embed/${props.tokenAddress}/config?env=${props.env}`,
     { headers: { 'x-api-key': API_KEY } }
   );
   config.value = await res.json();
@@ -1451,7 +1451,7 @@ class HandleRenderer {
 ### Test Script
 
 ```bash
-BASE_URL="https://debox-handle-marketplace.replit.app"
+BASE_URL="https://triba.ai"
 API_KEY="YOUR_API_KEY"
 
 echo "=== List Communities ==="
